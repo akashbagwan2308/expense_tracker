@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import plotly.express as px
+import io
 
 # Function to load the existing data from the Excel file
 def load_data():
@@ -42,7 +43,7 @@ def main():
             date_str = date.strftime('%Y-%m-%d')
 
             # Calculate balance
-            if category == "Deposite":
+            if category == "Deposit":
                 balance = df["Balance"].iloc[-1] + amount
             else:
                 balance = df["Balance"].iloc[-1] - amount
@@ -69,8 +70,15 @@ def main():
     st.header(f"Last 5 Rows of Expense Table {month}")
     st.table(df.tail(5))  # Display the last 5 rows
 
+    # Add a download button to download the Excel file
+    excel_buffer = io.BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Sheet1")
+    excel_buffer.seek(0)
+    st.download_button("Download Excel File", excel_buffer, file_name="expenditure.xlsx", key="download-button")
+
     # Calculate and display the total expenditure
-    total_expenditure = df[df["Category"] != "Deposite"]["Amount"].sum()
+    total_expenditure = df[df["Category"] != "Deposit"]["Amount"].sum()
     st.subheader(f"Total Expense: ₹ {total_expenditure:.2f}")
 
     # Calculate and display the current balance
@@ -82,8 +90,10 @@ def main():
     category_expenses.rename(columns={"Amount": "Total Amount"}, inplace=True)
 
     st.header("Expenses by Category : ")
-    fig = px.pie(category_expenses, values="Total Amount", names="Category", hole=0.3)
+    fig = px.pie(category_expenses, values="Total Amount", names="Category", hole=0.39)
     st.plotly_chart(fig)
+
+
 
 if __name__ == "__main__":
     main()
